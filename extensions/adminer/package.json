@@ -1,0 +1,13 @@
+{
+  "name": "adminer",
+  "version": "1.0.0",
+  "description": "Adminer",
+  "main": "main.js",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "minimist": "^1.2.5",
+    "websocket": "^1.0.34",
+    "php-server-manager": "^1.3.3"
+  }
+}

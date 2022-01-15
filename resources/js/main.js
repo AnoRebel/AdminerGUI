@@ -1,8 +1,7 @@
 // This is just a sample app. You can structure your Neutralinojs app code as you wish.
 // This example app is written with vanilla JavaScript and HTML.
 // Feel free to use any frontend framework you like :)
-
-class LocalServer {
+class PHPServer {
     constructor(config) {
         this.php = "php";
         this.host = "127.0.0.1";
@@ -11,11 +10,10 @@ class LocalServer {
         this.script = null;
         this.directives = {};
         this.config = null;
-        this.stdio = "inherit";
-        this.env = Neutralino.os.getEnv;
+        this.pid = null;
 
         if (config) {
-            Object.keys(config).forEach(name => {
+            Object.keys(config).forEach((name) => {
                 if (!(name in this)) {
                     throw new Error(`Config ${name} is not valid`);
                 }
@@ -33,7 +31,7 @@ class LocalServer {
             params.push("-t");
             params.push(this.directory);
         }
-        Object.keys(this.directives).forEach(d => {
+        Object.keys(this.directives).forEach((d) => {
             params.push("-d");
             params.push(`${d}=${this.directives[d]}`);
         });
@@ -47,52 +45,102 @@ class LocalServer {
         return params;
     }
     run(cb) {
-        this.process = Neutralino.os.execCommand(`${this.php} ${this.getParameters().join(" ")}`);
-        if (this.process.exitCode > 0) {
-            console.log("PHP Server Closed");
-            console.error("PHP Server Error: ", this.process.stdErr);
-        }
-        if (this.process.exitCode == 1) {
-            console.log("General Error");
-        }
-        if (this.process.exitCode == 126) {
-            console.log("Cannot Exec, maybe permission");
-        }
-        if (this.process.exitCode == 127) {
-            console.log("Not Found");
-        }
-        if  (this.process.exitCode == 128) {
-            console.log("Invalid Argument");
-        }
+        Neutralino.os
+            .execCommand(`${this.php} ${this.getParameters().join(" ")}`)
+            .then((proc) => {
+                this.process = proc;
+                if (proc.exitCode == 0) {
+                    this.pid = proc.pid;
+                    console.info(
+                        "PHP Server Started: ",
+                        this.getOp(proc)
+                    );
+                    Neutralino.debug.log(
+                        `PHP Server Started: ${this.getOp(proc)}`, "INFO"
+                    );
+
+                }
+                if (proc.exitCode == 1) {
+                    console.error(
+                        "General Error: ",
+                        this.getOp(proc)
+                    );
+                    Neutralino.debug.log(
+                        `General Error: ${this.getOp(proc)}`, "ERROR"
+                    );
+                }
+                if (proc.exitCode == 126) {
+                    console.error(
+                        "Cannot Exec, maybe permission: ",
+                        this.getOp(proc)
+                    );
+                    Neutralino.debug.log(
+                        `Cannot Exec, maybe permission: ${this.getOp(proc)}`, "ERROR"
+                    );
+                }
+                if (proc.exitCode == 127) {
+                    console.error(
+                        "Not Found: ",
+                        this.getOp(proc)
+                    );
+                    Neutralino.debug.log(
+                        `Not Found: ${this.getOp(proc)}`, "ERROR"
+                    );
+                }
+                if (proc.exitCode == 128) {
+                    console.error(
+                        "Invalid Argument: ",
+                        this.getOp(proc)
+                    );
+                    Neutralino.debug.log(
+                        `Invalid Argument: ${this.getOp(proc)}`, "ERROR"
+                    );
+                }
+            });
     }
     close() {
-        if (!this.process) return;
-        this.process.kill();
-        delete this.process;
+        if (!this.pid) return;
+        console.info("Closing PHP Server: ", this.pid);
+        Neutralino.debug.log(`Closing PHP Server: ${this.pid}`, "INFO");
+        Neutralino.os.execCommand(`kill -9 ${this.pid}`).then(proc => {
+            if (proc.exitCode == 0) {
+                this.pid = null;
+                delete this.process;
+            } else {
+                Neutralino.debug.log(`Failed to close. Code: ${proc.exitCode}. ${proc.stdErr}`, "ERROR");
+                console.error("Failed to close: ", proc.exitCode, proc.stdErr);
+            }
+        });
     }
     toString() {
         return `${this.php} ${this.getParameters().join(" ")}`;
     }
+    getOp(io) {
+        if (io.stdOut == "" && io.stdErr == "") {
+            return "Not Output";
+        } else if (io.stdOut == "") {
+            return io.stdErr;
+        } else {
+            return io.stdOut;
+        }
+    }
 }
-function showInfo() {
-    document.getElementById("info").innerHTML = `
+
+const showInfo = () =>
+    (document.getElementById("info").innerHTML = `
         ${NL_APPID} is running on port ${NL_PORT}  inside ${NL_OS}
         <br/><br/>
         <span>server: v${NL_VERSION} . client: v${NL_CVERSION}</span>
-        `;
-}
+        `);
 
-function openDocs() {
-    Neutralino.os.open("https://neutralino.js.org/docs");
-}
+const openDocs = () => Neutralino.os.open("https://neutralino.js.org/docs");
 
-function openTutorial() {
+const openTutorial = () =>
     Neutralino.os.open(
         "https://www.youtube.com/watch?v=txDlNNsgSh8&list=PLvTbqpiPhQRb2xNQlwMs0uVV0IN8N-pKj"
     );
-}
 
-function setTray() {
+const setTray = () => {
     if (NL_MODE != "window") {
         console.log("INFO: Tray menu is only available in the window mode.");
         return;
@@ -106,9 +154,9 @@ function setTray() {
         ],
     };
     Neutralino.os.setTray(tray);
-}
+};
 
-function onTrayMenuItemClicked(event) {
+const onTrayMenuItemClicked = (event) => {
     switch (event.detail.id) {
         case "VERSION":
             Neutralino.os.showMessageBox(
@@ -120,22 +168,24 @@ function onTrayMenuItemClicked(event) {
             Neutralino.app.exit();
             break;
     }
-}
+};
 
-function onWindowClose() {
+const server = new PHPServer({
+    port: "9898",
+    directory: "./resources/adminer",
+});
+const onWindowClose = () => {
+    server.close();
     Neutralino.app.exit();
-}
+};
 
 Neutralino.init();
+server.run();
 
 Neutralino.events.on("trayMenuItemClicked", onTrayMenuItemClicked);
 // This request will be queued and processed when the extension connects.
 Neutralino.extensions
-    .dispatch(
-        "js.neutralino.adminer",
-        "eventToExtension",
-        "Hello extension!"
-    )
+    .dispatch("js.neutralino.adminer", "eventToExtension", "Hello extension!")
     .catch((err) => {
         console.log("Extension isn't loaded!");
     });

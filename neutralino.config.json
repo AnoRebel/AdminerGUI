@@ -1,5 +1,5 @@
 {
-  "applicationId": "js.neutralino.sample",
+  "applicationId": "js.neutralino.adminer_gui",
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
@@ -14,11 +14,7 @@
   "nativeBlockList": [],
   "globalVariables": {
     "TEST1": "Hello",
-    "TEST2": [
-      2,
-      4,
-      5
-    ],
+    "TEST2": [2, 4, 5],
     "TEST3": {
       "value1": 10,
       "value2": {}
@@ -26,34 +22,30 @@
   },
   "modes": {
     "window": {
-      "title": "AdminerGUI",
-      "width": 800,
-      "height": 500,
+      "title": "Adminer GUI",
+      "width": 400,
+      "height": 300,
       "minWidth": 400,
-      "minHeight": 200,
+      "minHeight": 300,
       "fullScreen": false,
-      "alwaysOnTop": false,
+      "alwaysOnTop": true,
       "icon": "/resources/icons/appIcon.png",
       "enableInspector": true,
-      "borderless": false,
+      "borderless": true,
       "maximize": false,
       "hidden": false,
-      "resizable": true,
-      "exitProcessOnClose": false
+      "resizable": false,
+      "exitProcessOnClose": true
     },
     "browser": {
       "globalVariables": {
         "TEST": "Test value browser"
       },
-      "nativeBlockList": [
-        "filesystem.*"
-      ]
+      "nativeBlockList": ["filesystem.*"]
     },
     "cloud": {
       "url": "/resources/#cloud",
-      "nativeAllowList": [
-        "app.*"
-      ]
+      "nativeAllowList": ["app.*"]
     }
   },
   "cli": {

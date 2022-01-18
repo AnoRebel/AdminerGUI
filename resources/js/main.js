@@ -51,22 +51,17 @@ class PHPServer {
                 this.process = proc;
                 if (proc.exitCode == 0) {
                     this.pid = proc.pid;
-                    console.info(
-                        "PHP Server Started: ",
-                        this.getOp(proc)
-                    );
+                    console.info("PHP Server Started: ", this.getOp(proc));
                     Neutralino.debug.log(
-                        `PHP Server Started: ${this.getOp(proc)}`, "INFO"
+                        `PHP Server Started: ${this.getOp(proc)}`,
+                        "INFO"
                     );
-
                 }
                 if (proc.exitCode == 1) {
-                    console.error(
-                        "General Error: ",
-                        this.getOp(proc)
-                    );
+                    console.error("General Error: ", this.getOp(proc));
                     Neutralino.debug.log(
-                        `General Error: ${this.getOp(proc)}`, "ERROR"
+                        `General Error: ${this.getOp(proc)}`,
+                        "ERROR"
                     );
                 }
                 if (proc.exitCode == 126) {
@@ -75,25 +70,22 @@ class PHPServer {
                         this.getOp(proc)
                     );
                     Neutralino.debug.log(
-                        `Cannot Exec, maybe permission: ${this.getOp(proc)}`, "ERROR"
+                        `Cannot Exec, maybe permission: ${this.getOp(proc)}`,
+                        "ERROR"
                     );
                 }
                 if (proc.exitCode == 127) {
-                    console.error(
-                        "Not Found: ",
-                        this.getOp(proc)
-                    );
+                    console.error("Not Found: ", this.getOp(proc));
                     Neutralino.debug.log(
-                        `Not Found: ${this.getOp(proc)}`, "ERROR"
+                        `Not Found: ${this.getOp(proc)}`,
+                        "ERROR"
                     );
                 }
                 if (proc.exitCode == 128) {
-                    console.error(
-                        "Invalid Argument: ",
-                        this.getOp(proc)
-                    );
+                    console.error("Invalid Argument: ", this.getOp(proc));
                     Neutralino.debug.log(
-                        `Invalid Argument: ${this.getOp(proc)}`, "ERROR"
+                        `Invalid Argument: ${this.getOp(proc)}`,
+                        "ERROR"
                     );
                 }
             });
@@ -102,12 +94,15 @@ class PHPServer {
         if (!this.pid) return;
         console.info("Closing PHP Server: ", this.pid);
         Neutralino.debug.log(`Closing PHP Server: ${this.pid}`, "INFO");
-        Neutralino.os.execCommand(`kill -9 ${this.pid}`).then(proc => {
+        Neutralino.os.execCommand(`kill -9 ${this.pid}`).then((proc) => {
             if (proc.exitCode == 0) {
                 this.pid = null;
                 delete this.process;
             } else {
-                Neutralino.debug.log(`Failed to close. Code: ${proc.exitCode}. ${proc.stdErr}`, "ERROR");
+                Neutralino.debug.log(
+                    `Failed to close. Code: ${proc.exitCode}. ${proc.stdErr}`,
+                    "ERROR"
+                );
                 console.error("Failed to close: ", proc.exitCode, proc.stdErr);
             }
         });
@@ -179,21 +174,31 @@ const onWindowClose = () => {
     Neutralino.app.exit();
 };
 
-Neutralino.init();
 server.run();
+Neutralino.init();
 
 Neutralino.events.on("trayMenuItemClicked", onTrayMenuItemClicked);
-// This request will be queued and processed when the extension connects.
-Neutralino.extensions
-    .dispatch("js.neutralino.adminer", "eventToExtension", "Hello extension!")
-    .catch((err) => {
-        console.log("Extension isn't loaded!");
-    });
-Neutralino.events.on("eventFromExtension", (evt) => {
-    console.log(`INFO: Test extension said: ${evt.detail}`);
-});
-
 Neutralino.events.on("windowClose", onWindowClose);
+
+const newWin = async () => {
+    let win = await Neutralino.window.create("http://127.0.0.1:9898", {
+        title: "Adminer",
+        width: 800,
+        height: 600,
+        minWidth: 400,
+        minHeight: 300,
+        fullScreen: false,
+        alwaysOnTop: false,
+        icon: "/resources/icons/appIcon.png",
+        enableInspector: true,
+        borderless: false,
+        maximize: false,
+        hidden: false,
+        resizable: true,
+        exitProcessOnClose: false,
+    });
+};
+window.newWin = newWin;
 
 if (NL_OS != "Darwin") {
     // TODO: Fix https://github.com/neutralinojs/neutralinojs/issues/615

@@ -14,6 +14,7 @@ function adminer_object()
 
     $plugins = array(
         // specify enabled plugins here
+        new AdminerNeutralino(),
         new AdminerDumpJson(),
         new AdminerJsonColumn(),
         new AdminerEditForeign(),
@@ -41,11 +42,3 @@ function adminer_object()
 // include original Adminer or Adminer Editor
 include "./adminer.php";
 ?>
-
-<html>
-
-<body>
-    <script src="index.js"></script>
-</body>
-
-</html>

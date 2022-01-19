@@ -44,68 +44,15 @@ class PHPServer {
         }
         return params;
     }
-    run(cb) {
-        Neutralino.os
-            .execCommand(`${this.php} ${this.getParameters().join(" ")}`)
-            .then((proc) => {
-                this.process = proc;
-                if (proc.exitCode == 0) {
-                    this.pid = proc.pid;
-                    console.info("PHP Server Started: ", this.getOp(proc));
-                    Neutralino.debug.log(
-                        `PHP Server Started: ${this.getOp(proc)}`,
-                        "INFO"
-                    );
-                }
-                if (proc.exitCode == 1) {
-                    console.error("General Error: ", this.getOp(proc));
-                    Neutralino.debug.log(
-                        `General Error: ${this.getOp(proc)}`,
-                        "ERROR"
-                    );
-                }
-                if (proc.exitCode == 126) {
-                    console.error(
-                        "Cannot Exec, maybe permission: ",
-                        this.getOp(proc)
-                    );
-                    Neutralino.debug.log(
-                        `Cannot Exec, maybe permission: ${this.getOp(proc)}`,
-                        "ERROR"
-                    );
-                }
-                if (proc.exitCode == 127) {
-                    console.error("Not Found: ", this.getOp(proc));
-                    Neutralino.debug.log(
-                        `Not Found: ${this.getOp(proc)}`,
-                        "ERROR"
-                    );
-                }
-                if (proc.exitCode == 128) {
-                    console.error("Invalid Argument: ", this.getOp(proc));
-                    Neutralino.debug.log(
-                        `Invalid Argument: ${this.getOp(proc)}`,
-                        "ERROR"
-                    );
-                }
-            });
+    async run(cb) {
+        await Neutralino.os
+            .execCommand(`${this.php} ${this.getParameters().join(" ")}`);
     }
-    close() {
+    async close() {
         if (!this.pid) return;
         console.info("Closing PHP Server: ", this.pid);
         Neutralino.debug.log(`Closing PHP Server: ${this.pid}`, "INFO");
-        Neutralino.os.execCommand(`kill -9 ${this.pid}`).then((proc) => {
-            if (proc.exitCode == 0) {
-                this.pid = null;
-                delete this.process;
-            } else {
-                Neutralino.debug.log(
-                    `Failed to close. Code: ${proc.exitCode}. ${proc.stdErr}`,
-                    "ERROR"
-                );
-                console.error("Failed to close: ", proc.exitCode, proc.stdErr);
-            }
-        });
+        await Neutralino.os.execCommand(`kill -9 ${this.pid}`);
     }
     toString() {
         return `${this.php} ${this.getParameters().join(" ")}`;
@@ -170,18 +117,74 @@ const server = new PHPServer({
     directory: "./resources/adminer",
 });
 const onWindowClose = () => {
-    server.close();
     Neutralino.app.exit();
+    // server.close().then((proc) => {
+    //     if (proc.exitCode == 0) {
+    //         this.pid = null;
+    //         delete this.process;
+    //         Neutralino.app.exit();
+    //     } else {
+    //         Neutralino.debug.log(
+    //             `Failed to close. Code: ${proc.exitCode}. ${proc.stdErr}`,
+    //             "ERROR"
+    //         );
+    //         console.error("Failed to close: ", proc.exitCode, proc.stdErr);
+    //     }
+    // });
 };
 
-server.run();
 Neutralino.init();
+Neutralino.events.on('ready', () => {
+    Neutralino.os.showMessageBox('Welcome', 'Hello Neutralinojs');
+});
+// server.run().then((proc) => {
+//     server.process = proc;
+//     if (proc.exitCode == 0) {
+//         server.pid = proc.pid;
+//         console.info("PHP Server Started: ", server.getOp(proc));
+//         Neutralino.debug.log(
+//             `PHP Server Started: ${server.getOp(proc)}`,
+//             "INFO"
+//         );
+//     }
+//     if (proc.exitCode == 1) {
+//         console.error("General Error: ", server.getOp(proc));
+//         Neutralino.debug.log(
+//             `General Error: ${server.getOp(proc)}`,
+//             "ERROR"
+//         );
+//     }
+//     if (proc.exitCode == 126) {
+//         console.error(
+//             "Cannot Exec, maybe permission: ",
+//             server.getOp(proc)
+//         );
+//         Neutralino.debug.log(
+//             `Cannot Exec, maybe permission: ${server.getOp(proc)}`,
+//             "ERROR"
+//         );
+//     }
+//     if (proc.exitCode == 127) {
+//         console.error("Not Found: ", server.getOp(proc));
+//         Neutralino.debug.log(
+//             `Not Found: ${server.getOp(proc)}`,
+//             "ERROR"
+//         );
+//     }
+//     if (proc.exitCode == 128) {
+//         console.error("Invalid Argument: ", server.getOp(proc));
+//         Neutralino.debug.log(
+//             `Invalid Argument: ${server.getOp(proc)}`,
+//             "ERROR"
+//         );
+//     }
+// });
 
 Neutralino.events.on("trayMenuItemClicked", onTrayMenuItemClicked);
 Neutralino.events.on("windowClose", onWindowClose);
 
 const newWin = async () => {
-    let win = await Neutralino.window.create("http://127.0.0.1:9898", {
+    let win = await Neutralino.window.create("http://127.0.0.1:9898/adminer/", {
         title: "Adminer",
         width: 800,
         height: 600,

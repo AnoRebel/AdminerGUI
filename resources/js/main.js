@@ -45,8 +45,9 @@ class PHPServer {
         return params;
     }
     async run(cb) {
-        await Neutralino.os
-            .execCommand(`${this.php} ${this.getParameters().join(" ")}`);
+        await Neutralino.os.execCommand(
+            `${this.php} ${this.getParameters().join(" ")}`
+        );
     }
     async close() {
         if (!this.pid) return;
@@ -67,20 +68,6 @@ class PHPServer {
         }
     }
 }
-
-const showInfo = () =>
-    (document.getElementById("info").innerHTML = `
-        ${NL_APPID} is running on port ${NL_PORT}  inside ${NL_OS}
-        <br/><br/>
-        <span>server: v${NL_VERSION} . client: v${NL_CVERSION}</span>
-        `);
-
-const openDocs = () => Neutralino.os.open("https://neutralino.js.org/docs");
-
-const openTutorial = () =>
-    Neutralino.os.open(
-        "https://www.youtube.com/watch?v=txDlNNsgSh8&list=PLvTbqpiPhQRb2xNQlwMs0uVV0IN8N-pKj"
-    );
 
 const setTray = () => {
     if (NL_MODE != "window") {
@@ -114,98 +101,175 @@ const onTrayMenuItemClicked = (event) => {
 
 const server = new PHPServer({
     port: "9898",
-    directory: "./resources/adminer",
+    directory: "./resources",
 });
 const onWindowClose = () => {
     Neutralino.app.exit();
-    // server.close().then((proc) => {
-    //     if (proc.exitCode == 0) {
-    //         this.pid = null;
-    //         delete this.process;
-    //         Neutralino.app.exit();
-    //     } else {
-    //         Neutralino.debug.log(
-    //             `Failed to close. Code: ${proc.exitCode}. ${proc.stdErr}`,
-    //             "ERROR"
-    //         );
-    //         console.error("Failed to close: ", proc.exitCode, proc.stdErr);
-    //     }
-    // });
+    server.close().then((proc) => {
+        if (proc.exitCode == 0) {
+            this.pid = null;
+            delete this.process;
+            Neutralino.app.exit();
+        } else {
+            Neutralino.os.showNotification(
+                "Error",
+                `Failed to close. Code: ${proc.exitCode}. ${proc.stdErr}`,
+                "ERROR"
+            );
+            console.error("Failed to close: ", proc.exitCode, proc.stdErr);
+        }
+    });
 };
 
 Neutralino.init();
-Neutralino.events.on('ready', () => {
-    Neutralino.os.showMessageBox('Welcome', 'Hello Neutralinojs');
-});
-// server.run().then((proc) => {
-//     server.process = proc;
-//     if (proc.exitCode == 0) {
-//         server.pid = proc.pid;
-//         console.info("PHP Server Started: ", server.getOp(proc));
-//         Neutralino.debug.log(
-//             `PHP Server Started: ${server.getOp(proc)}`,
-//             "INFO"
-//         );
-//     }
-//     if (proc.exitCode == 1) {
-//         console.error("General Error: ", server.getOp(proc));
-//         Neutralino.debug.log(
-//             `General Error: ${server.getOp(proc)}`,
-//             "ERROR"
-//         );
-//     }
-//     if (proc.exitCode == 126) {
-//         console.error(
-//             "Cannot Exec, maybe permission: ",
-//             server.getOp(proc)
-//         );
-//         Neutralino.debug.log(
-//             `Cannot Exec, maybe permission: ${server.getOp(proc)}`,
-//             "ERROR"
-//         );
-//     }
-//     if (proc.exitCode == 127) {
-//         console.error("Not Found: ", server.getOp(proc));
-//         Neutralino.debug.log(
-//             `Not Found: ${server.getOp(proc)}`,
-//             "ERROR"
-//         );
-//     }
-//     if (proc.exitCode == 128) {
-//         console.error("Invalid Argument: ", server.getOp(proc));
-//         Neutralino.debug.log(
-//             `Invalid Argument: ${server.getOp(proc)}`,
-//             "ERROR"
-//         );
-//     }
-// });
+
+if (
+    document.readyState === "complete" ||
+    (document.readyState !== "loading" && !document.ownerDocument.doScroll)
+) {
+    Neutralino.window.setDraggableRegion("neutralinoapp");
+
+    // Neccessary Elements
+    const ok_btn = document.querySelector("#ok_btn");
+    const ok_text = document.querySelector("#ok_text");
+    const status = document.querySelector("#status");
+    const cancel = document.querySelector("#cancel");
+    const loading = document.querySelector("#svg");
+
+    // Initial Button Handlers
+    cancel.onclick = onWindowClose;
+    ok_btn.onclick = run_server;
+} else {
+    document.addEventListener("DOMContentLoaded", (e) => {
+        Neutralino.window.setDraggableRegion("neutralinoapp");
+
+        // Neccessary Elements
+        const ok_btn = document.querySelector("#ok_btn");
+        const ok_text = document.querySelector("#ok_text");
+        const status = document.querySelector("#status");
+        const cancel = document.querySelector("#cancel");
+        const loading = document.querySelector("#svg");
+
+        // Initial Button Handlers
+        cancel.onclick = onWindowClose;
+        ok_btn.onclick = run_server;
+    });
+}
+
+const run_server = () => {
+    status.innerText = "Starting Server...";
+    ok_btn.disabled = true;
+    ok_text.innerText = "Loading...";
+    svg.classList.toggle("hidden");
+    server.run().then((proc) => {
+        server.process = proc;
+        if (proc.exitCode == 0) {
+            ok_btn.onclick = newWin;
+            ok_text.innerText = "Open Adminer";
+            ok_btn.disabled = false;
+            svg.classList.toggle("hidden");
+            status.innerText = `Server Started.\nOpen App.`;
+            server.pid = proc.pid;
+            console.info("PHP Server Started: ", server.getOp(proc));
+            Neutralino.os.showNotification(
+                "Adminer",
+                `PHP Server Started: ${server.getOp(proc)}`,
+                "INFO"
+            );
+            return true;
+        }
+        if (proc.exitCode == 1) {
+            ok_text.innerText = "Start Server";
+            ok_btn.disabled = false;
+            svg.classList.toggle("hidden");
+            status.innerText = `Failed to start server.\n ${server.getOp(
+                proc
+            )}`;
+            console.error("General Error: ", server.getOp(proc));
+            Neutralino.os.showNotification(
+                "Error",
+                `General Error: ${server.getOp(proc)}`,
+                "ERROR"
+            );
+            return false;
+        }
+        if (proc.exitCode == 126) {
+            ok_text.innerText = "Start Server";
+            ok_btn.disabled = false;
+            svg.classList.toggle("hidden");
+            status.innerText = `Failed to start server.\n ${server.getOp(
+                proc
+            )}`;
+            console.error(
+                "Cannot Exec, maybe permission: ",
+                server.getOp(proc)
+            );
+            Neutralino.os.showNotification(
+                "Error",
+                `Cannot Exec, maybe permission: ${server.getOp(proc)}`,
+                "ERROR"
+            );
+            return false;
+        }
+        if (proc.exitCode == 127) {
+            ok_text.innerText = "Start Server";
+            ok_btn.disabled = false;
+            svg.classList.toggle("hidden");
+            status.innerText = `Failed to start server.\n ${server.getOp(
+                proc
+            )}`;
+            console.error("Not Found: ", server.getOp(proc));
+            Neutralino.os.showNotification(
+                "Error",
+                `Not Found: ${server.getOp(proc)}`,
+                "ERROR"
+            );
+            return false;
+        }
+        if (proc.exitCode == 128) {
+            ok_text.innerText = "Start Server";
+            ok_btn.disabled = false;
+            svg.classList.toggle("hidden");
+            status.innerText = `Failed to start server.\n ${server.getOp(
+                proc
+            )}`;
+            console.error("Invalid Argument: ", server.getOp(proc));
+            Neutralino.os.showNotification(
+                "Error",
+                `Invalid Argument: ${server.getOp(proc)}`,
+                "ERROR"
+            );
+            return false;
+        }
+    });
+};
 
 Neutralino.events.on("trayMenuItemClicked", onTrayMenuItemClicked);
 Neutralino.events.on("windowClose", onWindowClose);
 
 const newWin = async () => {
-    let win = await Neutralino.window.create("http://127.0.0.1:9898/adminer/", {
-        title: "Adminer",
-        width: 800,
-        height: 600,
-        minWidth: 400,
-        minHeight: 300,
-        fullScreen: false,
-        alwaysOnTop: false,
-        icon: "/resources/icons/appIcon.png",
-        enableInspector: true,
-        borderless: false,
-        maximize: false,
-        hidden: false,
-        resizable: true,
-        exitProcessOnClose: false,
-    });
+    let win = await Neutralino.window.create(
+        "http://127.0.0.1:9898/adminer/",
+        {
+            title: "Adminer",
+            width: 800,
+            height: 600,
+            minWidth: 400,
+            minHeight: 300,
+            fullScreen: false,
+            alwaysOnTop: false,
+            icon: "/resources/icons/appIcon.png",
+            enableInspector: true,
+            borderless: false,
+            maximize: false,
+            hidden: false,
+            resizable: true,
+            exitProcessOnClose: false,
+        }
+    );
 };
-window.newWin = newWin;
 
 if (NL_OS != "Darwin") {
     // TODO: Fix https://github.com/neutralinojs/neutralinojs/issues/615
     setTray();
 }
-
-showInfo();
